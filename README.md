@@ -1,36 +1,49 @@
-# Comparative Analysis of Concurrency Models in Java, Erlang and Python
-## The One Billion Row Challenge
+# Comparative Analysis of Concurrency in Java and Erlang.
 
 ### Abstract:
-This thesis proposes a comprehensive comparative analysis of concurrency models in three different programming languages: Java, Erlang, and Python. The study will use the billion row challenge as a benchmarking platform to assess the concurrency capabilities of each language in handling and processing massive datasets. By examining performance metrics such as throughput, latency, and resource utilization, the thesis aims to provide insights into the strengths and weaknesses of concurrency mechanisms employed by each language. Additionally, the research will explore practical implications for real-world applications requiring efficient processing of large-scale data.
+This thesis presents a comprehensive comparative analysis of concurrency models in Java and Erlang, two distinct programming languages with differing paradigms for handling concurrency. Java, an object-oriented language, employs the shared memory model, while Erlang, a functional language, utilizes the actor model. Through the measurement of latency, throughput, and resource usage, this study evaluates the performance of both languages in solving three distinct problems: CPU-bound, I/O-bound, and hybrid scenarios. By analyzing these metrics, the thesis provides insights into the strengths and weaknesses of each language and concurrency model. Furthermore, it considers the tool-sets and limitations provided by both languages in dealing with concurrency. This research contributes to a deeper understanding of the practical implications and trade-offs involved in selecting a concurrency model for real-world applications.
 ## Introduction:
-Concurrency is a fundamental aspect of modern software development, particularly in contexts where scalability and performance are of importance. Java, Erlang, and Python represent three distinct paradigms in terms of concurrency models: thread-based concurrency in Java, lightweight actor-based concurrency in Erlang, and a mix of thread-based and asynchronous programming in Python. Despite their differences, each language offers solutions for concurrent programming, making them suitable candidates for comparison.
-## Objective:
-The primary objective of this thesis is to evaluate and compare the concurrency models of Java, Erlang, and Python using the billion row challenge as a standardized benchmark. By measuring the performance of concurrent data parsing, processing and presenting across these languages, the thesis aims to identify the strengths and weaknesses of each language. 
+As the technology of our computers advances in terms of computational power and the possibility of multi-core processors, the scale of problems and their complexity get greater. While these advancements make sequential programming faster and more efficient, it’s easy for developers to get comfortable even though there is great potential for utilizing the computational power that our hardware offers. The limitations that arise from the development of processors have caused multi-core processors to be more abundant and as our programs become more computationally heavy and handle larger amounts of data, the need for parallel programming becomes more important.
 
-## Methodology:
-The research will involve designing and implementing concurrent data processing algorithms in Java, Erlang, and Python to address the billion row challenge. Each implementation will be optimized for performance and scalability while adhering to the idiomatic concurrency patterns of the respective languages. Performance metrics such as throughput, latency, and resource consumption will be measured and analyzed using standardized testing methodologies. The thesis will divide the task into three different stages, data parsing, processing and presenting. The first step will be to identify the most effective parsing of the dataset, the second will be how to process it and finally how to present it. 
-## Expected Outcomes:
-- Quantitative comparison of concurrency performance across Java, Erlang, and Python.
-- Identification of strengths and weaknesses in concurrency models of each language.
-- Insights into practical considerations for selecting the appropriate language for concurrent data processing tasks.
-- Recommendations for optimizing concurrency performance in each language based on the findings.
+Parallel programming is a technique where the tasks are broken down into smaller subtasks that can be executed concurrently. This has emerged as a critical approach to harnessing the full potential of modern hardware architecture. By distributing these tasks across multiple cores, parallel programming allows for significant performance improvements and enables the efficient utilization of available resources. In recent years, parallel programming paradigms such as shared memory multiprocessing, distributed computing, and more, have gained a lot of traction, offering developers a diverse toolkit to handle increasingly complex computational challenges.
 
+Transitioning from sequential programming to parallel programming however, has not been an easy task, as it poses several challenges. Coordinating execution of concurrent tasks, managing shared memory and ensuring thread safety are just a few of the obstacles that developers must navigate. Additionally, designing efficient parallel algorithms requires a deep understanding of both the underlying hardware architecture and the characteristics of the domain of the problem.
+## Problem Statement:
+The increasing demand for efficient handling of concurrent tasks in modern software applications requires a thorough understanding of concurrency, performance and resource utilization. However, the diverse range of languages offering concurrency presents developers with a challenging decision-making process when selecting the most suitable language for their applications. While there exists research on concurrency models between different languages, there lacks a comparative analysis that directly evaluates their performance and scalability in different types of scenarios.
+
+## Purpose:
+The purpose of this thesis is to compare Java and Erlang, and their ability to solve different types of workloads by using different metrics such as latency, throughput and resource usage. It aims to help developers decide on what language to use based on what type of workload they are facing. 
+
+## Workload
+
+- CPU bound - Matrix multiplication
+- I/O bound - Webserver handling and distributing http requests
+- Hybrid - Program that scrapes and encodes images from the web 
 
 ## Bibliography:
+https://www.sciencedirect.com/science/article/pii/S0950584912001802
+
 Mastering Concurrency in Python, Quan Nguyen
 
 Java Concurrency in Practice, Brian Goetz
 
 Programming Erlang: Software for a Concurrent World, Joe Armstrong
 
-https://www.sciencedirect.com/science/article/pii/S0950584912001802
-
 https://docs.oracle.com/javase/8/docs/api/
 
 https://www.erlang.org/doc/
 
 https://docs.python.org/3/
+
+https://kth.diva-portal.org/smash/get/diva2:648395/FULLTEXT01.pdf
+
+https://odr.chalmers.se/server/api/core/bitstreams/d1234ca1-eb72-4c9d-b403-fbb52d32f4e9/content
+
+https://www.e-reading.club/bookreader.php/139986/Programming_Erlang.pdf
+
+https://ieeexplore.ieee.org/document/4476447/similar#similar
+
+https://dl.acm.org/doi/pdf/10.1145/1095408.1095421
 
 
 
