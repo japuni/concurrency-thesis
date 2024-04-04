@@ -20,13 +20,6 @@ public class MatrixMultiplier {
 
         long start = System.nanoTime();
         int[][] matrixC = multiplyMatrices(matrixA, matrixB);
-        /*
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-         */
         long end = System.nanoTime();
 
         double duration = (end-start) / 1.0E9;
