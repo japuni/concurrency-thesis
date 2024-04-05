@@ -4,22 +4,29 @@
 test(N) ->
     A = generate_matrix(N),
     B = generate_matrix(N),
+    Operations = math:pow(N, 3),
     Start = erlang:monotonic_time(nanosecond),
     FlippedMatrix = flip_matrix(B),
     multiply(A, FlippedMatrix),
     End = erlang:monotonic_time(nanosecond),
     Duration = (End - Start) / 1_000_000_000,
-    io:format("~f seconds~n", [Duration]).
+    Throughput = (Operations / Duration) / 1000,
+    io:format("Computation time (sequential): ~f seconds~n", [Duration]),
+    io:format("Throughput (sequential): ~p kOp/s", [Throughput]).
 
 test_parallel(N, AmountOfWorkers) ->
     A = generate_matrix(N),
     B = generate_matrix(N),
+    Operations = math:pow(N, 3),
     Start = erlang:monotonic_time(nanosecond),
     FlippedMatrix = flip_matrix(B),
     multiply_parallel(A, FlippedMatrix, AmountOfWorkers,N),
     End = erlang:monotonic_time(nanosecond),
     Duration = (End - Start) / 1_000_000_000,
-    io:format("~f seconds~n", [Duration]).
+    Throughput = (Operations / Duration) / 1000,
+    io:format("Computation time (parallel): ~f seconds~n", [Duration]),
+    io:format("Throughput (parallel): ~p kOp/s~n", [Throughput]).
+
 
 
 multiply(MatrixA, MatrixB) ->
@@ -29,7 +36,7 @@ multiply_parallel(MatrixA, MatrixB, Workers, N) ->
     SplitValue = N div Workers,
     WorkerPids = [spawn(fun() -> worker(MatrixB) end) || _ <- lists:seq(1, Workers)],
     WorkList = split_matrix(MatrixA, SplitValue, []),
-    io:format("Antal Workers = ~p~n Antal Work = ~p~n", [length(WorkerPids), length(WorkList)]),
+    io:format("Antal Workers = ~p~nAntal Work = ~p~n", [length(WorkerPids), length(WorkList)]),
     send_work(WorkList, WorkerPids),
     gather_result(WorkerPids, []).
 
@@ -44,9 +51,8 @@ worker(Matrix) ->
         {work, Master, Work} ->
             Result = multiply(Work, Matrix),
             Master ! {self(), Result}
-    after 200 ->
-              ok
     end.
+
 gather_result([], Acc) ->
     lists:reverse(Acc);
 gather_result([Pid | WorkerPids], Acc) ->
