@@ -25,7 +25,7 @@ test_parallel(N, AmountOfWorkers) ->
     Duration = (End - Start) / 1_000_000_000,
     Throughput = (Operations / Duration) / 1000,
     io:format("Computation time (parallel): ~f seconds~n", [Duration]),
-    io:format("Throughput (parallel): ~p kOp/s~n", [Throughput]).
+    io:format("Thrughput time (parallel): ~p kOp/s~n", [Throughput]).
 
 
 
