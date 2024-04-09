@@ -3,25 +3,29 @@
 
 start() ->
     {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 50}]),
-    [spawn(fun() -> listener(ListenSocket, N, 0) end) || N <- lists:seq(1, 6)].
+    [spawn(fun() -> connection_handler(ListenSocket, N) end) || N <- lists:seq(1, 6)].
 
-
-listener(ListenSocket, N, Count) when Count rem 10 =:= 0 ->
-    io:format("Listener nr:~p has served ~p connections ~n", [N, Count]),
+connection_handler(ListenSocket, N) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    spawn(fun() -> client_handler(ClientSocket) end),
-    listener(ListenSocket, N, Count + 1);
+    Closer = spawn(fun() -> tcp_closer(6, ClientSocket) end),
+    [spawn(fun() -> client_handler(ClientSocket, Closer) end) || _ <- lists:seq(1, 6)],
+    connection_handler(ListenSocket, N).
 
-listener(ListenSocket, N, Count) ->
-    {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    [spawn(fun() -> client_handler(ClientSocket) end) || _ <- lists:seq(1, 6)],
-    listener(ListenSocket, N, Count + 1).
-
-client_handler(ClientSocket) ->
+client_handler(ClientSocket, Closer) ->
     case gen_tcp:recv(ClientSocket, 0) of
         {ok, _Data} ->
             ok = gen_tcp:send(ClientSocket, "ok"),
-            client_handler(ClientSocket);
+            client_handler(ClientSocket, Closer);
         {error, _Reason} ->
-            ok = gen_tcp:close(ClientSocket)
+            Closer ! {done} 
     end.
+
+tcp_closer(0, ClientSocket) ->
+    ok = gen_tcp:close(ClientSocket); 
+
+tcp_closer(Count, ClientSocket) ->
+    receive 
+        {done} ->
+            tcp_closer(Count - 1, ClientSocket)
+    end.
+

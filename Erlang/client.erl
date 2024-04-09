@@ -67,7 +67,7 @@ test_erlang_2(Clients, Messages) ->
   TotalMessages = Messages * Clients,
   Pid = spawn(fun() -> counter(TotalMessages, Self) end),
   Start = erlang:monotonic_time(nanosecond),
-  [spawn(fun() -> start(Id, Pid, 8001) end) || Id <- lists:seq(1, Clients)],
+  [spawn(fun() -> start(Id, Pid, 8001, Messages) end) || Id <- lists:seq(1, Clients)],
   receive
     {done} ->
       End = erlang:monotonic_time(nanosecond),
