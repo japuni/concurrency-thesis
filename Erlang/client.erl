@@ -1,20 +1,12 @@
-%%%-------------------------------------------------------------------
-%%% @author Felix
-%%% @copyright (C) 2024, <COMPANY>
-%%% @doc
-%%%
-%%% @end
-%%% Created : 05. apr. 2024 14:12
-%%%-------------------------------------------------------------------
 -module(client).
 -author("Felix").
 
 %% API
--export([start/2, test_case_1/1]).
+-export([test_java/1, test_erlang/1, test_case_1/1]).
 
-start(Id, Counter) ->
+start(Id, Counter, Port) ->
 
-  case gen_tcp:connect("localhost", 8000, [{active, false}, {mode, list}]) of
+  case gen_tcp:connect("localhost", Port, [{active, false}, {mode, list}]) of
     {ok, Socket} ->
       ok = gen_tcp:send(Socket, "Hello from Erlang!\n"),
 
@@ -23,16 +15,43 @@ start(Id, Counter) ->
           Counter ! {done};
         {error, closed} ->
           io:fwrite("Client : ~p Socket closed~n", [Id]);
-        {error, _} ->
-          Counter ! {timeout}
+        {error, Reason} ->
+          io:fwrite("Client ~p: Error, Reason: ~p~n", [Id, Reason])
       end,
-
       ok = gen_tcp:close(Socket);
     {error, _} ->
-      start(Id, Counter)
+
+      start(Id, Counter, Port)
   end.
 
 
+test_java(N) ->
+  Self = self(),
+  Pid = spawn(fun() -> counter(N , Self) end),
+  Start = erlang:monotonic_time(nanosecond),
+  [spawn(fun() -> start(Id, Pid, 8000) end) || Id <- lists:seq(1, N)],
+  receive
+    {done} ->
+      End = erlang:monotonic_time(nanosecond),
+      Duration = (End - Start) / 1_000_000_000,
+          io:format("Computation time in java: ~f seconds~n", [Duration]),
+          io:format("Throughput in java: ~f seconds~n", [(N / Duration)])
+  end,
+  ok.
+
+test_erlang(N) ->
+  Self = self(),
+  Pid = spawn(fun() -> counter(N , Self) end),
+  Start = erlang:monotonic_time(nanosecond),
+  [spawn(fun() -> start(Id, Pid, 8001) end) || Id <- lists:seq(1, N)],
+  receive
+    {done} ->
+      End = erlang:monotonic_time(nanosecond),
+      Duration = (End - Start) / 1_000_000_000,
+          io:format("Computation time in erlang: ~f seconds~n", [Duration]),
+          io:format("Throughput in erlang: ~f kOps~n", [(N / Duration) /1000])
+  end,
+  ok.
 
 test_case_1(N) ->
   Self = self(),
@@ -50,17 +69,6 @@ test_case_1(N) ->
   end,
   ok.
 
-
-start_counter(0) ->
-  io:format("starting done");
-start_counter(N) ->
-  receive
-    {done} ->
-      start_counter(N - 1);
-    {started} ->
-      start_counter(N-1)
-
-  end.
 counter(0,Master) ->
   Master ! {done};
 counter(N,Master) ->
