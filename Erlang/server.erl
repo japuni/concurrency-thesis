@@ -3,7 +3,7 @@
 
 start() ->
     {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 50}]),
-    [spawn_monitor(fun() -> listener(ListenSocket, N, 0) end) || N <- lists:seq(1, 256)].
+    [spawn(fun() -> listener(ListenSocket, N, 0) end) || N <- lists:seq(1, 6)].
 
 
 listener(ListenSocket, N, Count) when Count rem 10 =:= 0 ->
@@ -11,10 +11,10 @@ listener(ListenSocket, N, Count) when Count rem 10 =:= 0 ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
     spawn(fun() -> client_handler(ClientSocket) end),
     listener(ListenSocket, N, Count + 1);
-    
+
 listener(ListenSocket, N, Count) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    spawn(fun() -> client_handler(ClientSocket) end),
+    [spawn(fun() -> client_handler(ClientSocket) end) || _ <- lists:seq(1, 6)],
     listener(ListenSocket, N, Count + 1).
 
 client_handler(ClientSocket) ->
