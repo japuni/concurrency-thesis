@@ -1,10 +1,9 @@
 -module(server).
--export([start/0, handle_client/1]).
+-export([start/0]).
 
 start() ->
-    {ok, ListenSocket} = gen_tcp:listen(8000, [{active, false}, {packet, 0}]),
-    Pid = spawn(fun() -> accept_clients(ListenSocket)end),
-    spawn(fun() -> server_monitor(Pid)end).
+    {ok, ListenSocket} = gen_tcp:listen(8000, [{active, false}, {packet, 0},{backlog, 50}]),
+    [spawn(fun() -> listener(ListenSocket, N) end) || N <- lists:seq(1, 10)].
 
 server_monitor(Pid) ->
     Mref = monitor(process, Pid),
@@ -13,17 +12,16 @@ server_monitor(Pid) ->
             io:format("Server went down ~n")
     end.
 
-accept_clients(ListenSocket) ->
+listener(ListenSocket, N) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    spawn(fun() -> handle_client(ClientSocket) end),
-    accept_clients(ListenSocket).
+    spawn(fun() -> client_handler(ClientSocket, N) end),
+    listener(ListenSocket, N).
 
-handle_client(ClientSocket) ->
+client_handler(ClientSocket, N) ->
     case gen_tcp:recv(ClientSocket, 0) of
         {ok, _Data} ->
             ok = gen_tcp:send(ClientSocket, "ok"),
-            ok = gen_tcp:close(ClientSocket);
+            client_handler(ClientSocket, N);
         {error, Reason} ->
-            io:format("Failed to receive data from client: ~p~n", [Reason]),
             ok = gen_tcp:close(ClientSocket)
     end.

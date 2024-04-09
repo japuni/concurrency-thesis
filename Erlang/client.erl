@@ -19,7 +19,7 @@ start(Id, Counter) ->
       ok = gen_tcp:send(Socket, "Hello from Erlang!\n"),
 
       case gen_tcp:recv(Socket, 0) of
-        {ok, Data} ->
+        {ok, "ok"} ->
           Counter ! {done};
         {error, closed} ->
           io:fwrite("Client : ~p Socket closed~n", [Id]);
