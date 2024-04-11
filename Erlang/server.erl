@@ -3,18 +3,21 @@
 
 start() ->
     {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 50}]),
-    [spawn(fun() -> connection_handler(ListenSocket, N) end) || N <- lists:seq(1, 6)].
+    [spawn(fun() -> connection_handler(ListenSocket) end) || _ <- lists:seq(1, 6)].
 
-connection_handler(ListenSocket, N) ->
+connection_handler(ListenSocket) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
     Closer = spawn(fun() -> tcp_closer(6, ClientSocket) end),
     [spawn(fun() -> client_handler(ClientSocket, Closer) end) || _ <- lists:seq(1, 6)],
-    connection_handler(ListenSocket, N).
+    connection_handler(ListenSocket).
 
 client_handler(ClientSocket, Closer) ->
     case gen_tcp:recv(ClientSocket, 0) of
-        {ok, _Data} ->
-            ok = gen_tcp:send(ClientSocket, "ok"),
+        {ok, Data} ->
+            {X, Rest} = string:to_integer(Data),
+            {Y, []} = string:to_integer(Rest),
+            Result = X + Y,
+            ok = gen_tcp:send(ClientSocket, io_lib:format("~p", [Result])),
             client_handler(ClientSocket, Closer);
         {error, _Reason} ->
             Closer ! {done} 
