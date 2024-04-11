@@ -5,68 +5,62 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
-    static final boolean runParallel = true;
     static ServerSocket serverSocket;
 
     private final static int amountOfThreads = 6;
     public static void main(String[] args) throws Exception {
-        if (runParallel) {
-            try {
-                serverSocket = new ServerSocket(8000);
-                for (int i = 0; i < amountOfThreads; i++) {
-                    new Thread(new ConnectionHandler(i + 1)).start();
-                }
-            } catch (IOException e) {
-                System.out.println("I/O error: " + e);
+        try {
+            serverSocket = new ServerSocket(8000);
+            for (int i = 0; i < amountOfThreads; i++) {
+                new Thread(new ConnectionHandler(i + 1)).start();
             }
-        } else {
-            try (ServerSocket serverSocket = new ServerSocket(8000)) {
-                while (true) {
-                    try {
-                        Socket socket = serverSocket.accept();
-                        handleRequest(socket);
-                    } catch (IOException e) {
-                        System.out.println("I/O error: " + e);
-                    }
-                }
-            }
+        } catch (IOException e) {
+            System.out.println("I/O error: " + e);
         }
     }
 
-    static void handleRequest(Socket clientSocket) {
-        try (PrintWriter out = new PrintWriter(new BufferedOutputStream(clientSocket.getOutputStream()))) {
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            String line = in.readLine();
-            while (line != null) {
-                out.print("ok");
-                out.flush();
-                System.out.println(line);
-                line = in.readLine();
-            }
-        } catch (IOException e) {
-            System.out.println("Failed to send response to client: " + e.getMessage());
-        } finally {
-            try {
-                clientSocket.close();
-            } catch (IOException e) {
-                System.out.println("Failed to close client socket: " + e.getMessage());
-            }
-        }
+    static void handleRequest(String request, PrintWriter out) {
+        String[] requestParts = request.split("\\+");
+        int result = Integer.parseInt(requestParts[0]) + Integer.parseInt(requestParts[1]);
+        System.out.println(result);
+        out.print(result);
+        out.flush();
     }
 
     static class ClientHandler implements Runnable {
-        private final Socket clientSocket;
-        public ClientHandler(Socket clientSocket) {
+
+        PrintWriter out;
+        BufferedReader in;
+        Socket clientSocket;
+
+        ClientHandler(PrintWriter out, BufferedReader in, Socket clientSocket) {
+            this.out = out;
+            this.in = in;
             this.clientSocket = clientSocket;
         }
+
         @Override
         public void run() {
-            Server.handleRequest(clientSocket);
+            try {
+
+                String line = in.readLine();
+                while (line != null) {
+                    handleRequest(line, out);
+                    line = in.readLine();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
     static class ConnectionHandler implements Runnable {
-
         private final int workerNr;
 
         public ConnectionHandler(int i) {
@@ -79,12 +73,17 @@ public class Server {
             while (true) {
                 try {
                     Socket socket = serverSocket.accept();
-                    System.out.println("Thread " + workerNr + " accepted connection: " + socket.getInetAddress() + ":" + socket.getPort());
+                    try {
+                        System.out.println("Thread " + workerNr + " accepted connection: " + socket.getInetAddress() + ":" + socket.getPort());
+                        PrintWriter out = new PrintWriter(new BufferedOutputStream(socket.getOutputStream()));
+                        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                    for (int i = 0; i < amountOfThreads; i++) {
-                        new Thread(new ClientHandler(socket)).start();
+                        for (int i = 0; i < amountOfThreads; i++) {
+                            new Thread(new ClientHandler(out, in, socket)).start();
+                        }
+                    } catch (IOException e) {
+                        System.out.println("I/O error: " + e);
                     }
-
                     System.out.println("Thread " + workerNr + " has handled its client");
                 } catch (IOException e) {
                     System.out.println("I/O error: " + e);
