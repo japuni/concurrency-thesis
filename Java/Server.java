@@ -8,11 +8,11 @@ public class Server {
     static ServerSocket serverSocket;
 
     private final static int amountOfThreads = 6;
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         try {
             serverSocket = new ServerSocket(8000);
             for (int i = 0; i < amountOfThreads; i++) {
-                new Thread(new ConnectionHandler(i + 1)).start();
+                new Thread(new ConnectionHandler()).start();
             }
         } catch (IOException e) {
             System.out.println("I/O error: " + e);
@@ -22,7 +22,6 @@ public class Server {
     static void handleRequest(String request, PrintWriter out) {
         String[] requestParts = request.split("\\+");
         int result = Integer.parseInt(requestParts[0]) + Integer.parseInt(requestParts[1]);
-        System.out.println(result);
         out.print(result);
         out.flush();
     }
@@ -49,32 +48,25 @@ public class Server {
                     line = in.readLine();
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.out.println("I/O error: " + e);
             } finally {
                 try {
                     clientSocket.close();
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    System.out.println("I/O error: " + e);
                 }
             }
         }
     }
 
     static class ConnectionHandler implements Runnable {
-        private final int workerNr;
-
-        public ConnectionHandler(int i) {
-            this.workerNr = i;
-        }
 
         @Override
         public void run() {
-            System.out.println("Started connection thread");
             while (true) {
                 try {
                     Socket socket = serverSocket.accept();
                     try {
-                        System.out.println("Thread " + workerNr + " accepted connection: " + socket.getInetAddress() + ":" + socket.getPort());
                         PrintWriter out = new PrintWriter(new BufferedOutputStream(socket.getOutputStream()));
                         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
@@ -84,7 +76,6 @@ public class Server {
                     } catch (IOException e) {
                         System.out.println("I/O error: " + e);
                     }
-                    System.out.println("Thread " + workerNr + " has handled its client");
                 } catch (IOException e) {
                     System.out.println("I/O error: " + e);
                 }
