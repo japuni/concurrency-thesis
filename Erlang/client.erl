@@ -36,7 +36,7 @@ loop(Id, _Socket, _Counter, 0, _) ->
     io:fwrite("Client:~p is done~n", [Id]);
 
 loop(Id, Socket, Counter, Messages, {X, Y}) ->
-      ok = gen_tcp:send(Socket, io_lib:format("~p+~p", [X, Y])),
+      ok = gen_tcp:send(Socket, io_lib:format("~p+~p~n", [X, Y])),
       Result = hd(io_lib:format("~p", [X + Y])),
       io:format("Result = ~p~n", [Result]),
       case gen_tcp:recv(Socket, 0) of
@@ -51,6 +51,10 @@ loop(Id, Socket, Counter, Messages, {X, Y}) ->
         {error, Reason} ->
           io:fwrite("Client ~p: Error, Reason: ~p~n", [Id, Reason])
       end.
+
+% ping_pong_client(Port) ->
+%   case gen_tcp:connect("localhost", Port, [{active, false}, {mode, list}]) of
+
 test_java_2(Clients, Messages) ->
   Self = self(),
   TotalMessages = Messages * Clients,

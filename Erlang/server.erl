@@ -15,7 +15,7 @@ client_handler(ClientSocket, Closer) ->
     case gen_tcp:recv(ClientSocket, 0) of
         {ok, Data} ->
             {X, Rest} = string:to_integer(Data),
-            {Y, []} = string:to_integer(Rest),
+            {Y, _} = string:to_integer(Rest),
             Result = X + Y,
             ok = gen_tcp:send(ClientSocket, io_lib:format("~p", [Result])),
             client_handler(ClientSocket, Closer);
