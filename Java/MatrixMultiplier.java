@@ -3,7 +3,7 @@ package Java;
 import java.util.Arrays;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
-
+// Set backlog to the same as erlang
 public class MatrixMultiplier {
 
     public static final int SIZE = 1000;
