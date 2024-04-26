@@ -1,14 +1,16 @@
 package Java;
 
+import java.util.Arrays;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 
 public class MatrixMultiplier {
 
-    public static final int SIZE = 2500;
+    public static final int SIZE = 1000;
 
     public static void main(String[] args) {
         int size = SIZE;
+
         int[][] matrixA = new int[size][size];
         int[][] matrixB = new int[size][size];
 
