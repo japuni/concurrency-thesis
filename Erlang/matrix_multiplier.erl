@@ -1,6 +1,5 @@
 -module(matrix_multiplier).
--compile(export_all).
-
+-export([test/1, test_parallel/2, generate_matrix/1]).
 
 test(N) ->
     A = generate_matrix(N),

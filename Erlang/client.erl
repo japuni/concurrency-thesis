@@ -1,9 +1,5 @@
 -module(client).
--author("Felix").
-
-%% API
--export([test_java/2, test_erlang/2]).
-
+-export([test_java/2, test_erlang/2, test_hybrid_java/2, test_hybrid_erlang/2]).
 start(Id, Counter, Port, Messages) ->
     case gen_tcp:connect("localhost", Port, [{active, false}, {mode, list}]) of
         {ok, Socket} ->
@@ -36,9 +32,9 @@ loop(Id, Socket, Counter, Messages, {X, Y}) ->
 test_java(Clients, Messages) ->
     Self = self(),
     TotalMessages = Messages * Clients,
-    Pid = spawn(fun() -> counter(TotalMessages , Self) end),
+    Counter = spawn(fun() -> counter(TotalMessages , Self) end),
     Start = erlang:monotonic_time(nanosecond),
-    [spawn(fun() -> start(Id, Pid, 8000, Messages) end) || Id <- lists:seq(1, Clients)],
+    [spawn(fun() -> start(Id, Counter, 8000, Messages) end) || Id <- lists:seq(1, Clients)],
     receive
         {done} ->
       End = erlang:monotonic_time(nanosecond),
@@ -51,15 +47,73 @@ test_java(Clients, Messages) ->
 test_erlang(Clients, Messages) ->
     Self = self(),
     TotalMessages = Messages * Clients,
-    Pid = spawn(fun() -> counter(TotalMessages, Self) end),
+    Counter = spawn(fun() -> counter(TotalMessages, Self) end),
     Start = erlang:monotonic_time(nanosecond),
-    [spawn(fun() -> start(Id, Pid, 8001, Messages) end) || Id <- lists:seq(1, Clients)],
+    [spawn(fun() -> start(Id, Counter, 8001, Messages) end) || Id <- lists:seq(1, Clients)],
     receive
         {done} ->
       End = erlang:monotonic_time(nanosecond),
       Duration = (End - Start) / 1_000_000_000,
       io:format("Computation time in erlang: ~f seconds~n", [Duration]),
       io:format("Throughput in erlang: ~f clients served per second", [(TotalMessages / Duration)])
+    end,
+    ok.
+
+start_hybrid(Id, Counter, Port, Messages) ->
+    case gen_tcp:connect("localhost", Port, [{active, false}, {mode, list}]) of
+        {ok, Socket} ->
+            hybrid_loop(Id, Socket, Counter, Messages, 
+                        {matrix_multiplier:generate_matrix(100), matrix_multiplier:generate_matrix(100)}),
+            ok = gen_tcp:close(Socket);
+        {error, _} ->
+            start_hybrid(Id, Counter, Port, Messages)
+    end.
+
+hybrid_loop(Id, _Socket, _Counter, 0, _) ->
+    io:fwrite("Client~p is done~n", [Id]);
+
+hybrid_loop(Id, Socket, Counter, Messages, {MatrixA, MatrixB}) ->
+    ok = gen_tcp:send(Socket, io_lib:format("~p~n", [MatrixA])),
+    ok = gen_tcp:send(Socket, io_lib:format("~p~n", [MatrixB])),
+    case gen_tcp:recv(Socket, 0) of 
+        {ok, Result} ->
+            Counter ! {done},
+            loop(Id, Socket, Counter, Messages -1, {0, MatrixB});
+        {error, closed} ->
+            io:fwrite("Client : ~p Socket closed~n", [Id]);
+        {error, Reason} ->
+            io:fwrite("Client ~p: Error, Reason: ~p~n", [Id, Reason])
+    end.
+
+
+
+test_hybrid_java(Clients, Messages) ->
+    Self = self(),
+    TotalMessages = Messages * Clients,
+    Counter = spawn(fun() -> counter(TotalMessages , Self) end),
+    Start = erlang:monotonic_time(nanosecond),
+    [spawn(fun() -> start_hybrid(Id, Counter, 8000, Messages) end) || Id <- lists:seq(1, Clients)],
+    receive
+        {done} ->
+            End = erlang:monotonic_time(nanosecond),
+            Duration = (End - Start) / 1_000_000_000,
+            io:format("Computation time in java: ~f seconds~n", [Duration]),
+            io:format("Throughput in java: ~f clients served per second", [(TotalMessages / Duration)])
+    end,
+    ok.
+
+test_hybrid_erlang(Clients, Messages) ->
+    Self = self(),
+    TotalMessages = Messages * Clients,
+    Counter = spawn(fun() -> counter(TotalMessages, Self) end),
+    Start = erlang:monotonic_time(nanosecond),
+    [spawn(fun() -> start_hybrid(Id, Counter, 8001, Messages) end) || Id <- lists:seq(1, Clients)],
+    receive
+        {done} ->
+            End = erlang:monotonic_time(nanosecond),
+            Duration = (End - Start) / 1_000_000_000,
+            io:format("Computation time in erlang: ~f seconds~n", [Duration]),
+            io:format("Throughput in erlang: ~f clients served per second", [(TotalMessages / Duration)])
     end,
     ok.
 
