@@ -4,7 +4,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class Server {
+public class ServerP {
     static ServerSocket serverSocket;
 
     private final static int amountOfThreads = 6;
@@ -19,11 +19,15 @@ public class Server {
         }
     }
 
-    static void handleRequest(String request, PrintWriter out) {
+    static void handleRequestArithmetic(String request, PrintWriter out) {
         String[] requestParts = request.split("\\+");
         int result = Integer.parseInt(requestParts[0]) + Integer.parseInt(requestParts[1]);
         out.print(result);
         out.flush();
+    }
+
+    static void handleRequestMatrix(String matrix, PrintWriter out) {
+
     }
 
     static class ClientHandler implements Runnable {
@@ -44,7 +48,7 @@ public class Server {
 
                 String line = in.readLine();
                 while (line != null) {
-                    handleRequest(line, out);
+                    handleRequestArithmetic(line, out);
                     line = in.readLine();
                 }
             } catch (IOException e) {
@@ -70,9 +74,7 @@ public class Server {
                         PrintWriter out = new PrintWriter(new BufferedOutputStream(socket.getOutputStream()));
                         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                        for (int i = 0; i < amountOfThreads; i++) {
-                            new Thread(new ClientHandler(out, in, socket)).start();
-                        }
+                        new Thread(new ClientHandler(out, in, socket)).start();
                     } catch (IOException e) {
                         System.out.println("I/O error: " + e);
                     }
