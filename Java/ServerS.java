@@ -3,6 +3,8 @@ package Java;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerS {
     static ServerSocket serverSocket;
@@ -57,11 +59,9 @@ public class ServerS {
 
     static String handleRequestMatrix(BufferedReader in) throws IOException {
         String line = in.readLine();
-        int lineNr = 0;
-        String[] matricies = new String[2];
+        List<String> matrices = new ArrayList<>();
         while (line != null) {
-            matricies[lineNr] = line;
-            lineNr++;
+            matrices.add(line);
             line = in.readLine();
         }
         return "hello";
