@@ -1,29 +1,46 @@
 -module(matrix_multiplier).
--export([test/1, test_parallel/2, generate_matrix/1]).
+-export([test/2, generate_matrix/1, multiply_parallel/3, multiply/2]).
 
-test(N) ->
-    A = generate_matrix(N),
-    B = generate_matrix(N),
-    Operations = math:pow(N, 3),
+test(N, AmountOfWorkers) ->
+    {A, B} = generate_matrices(N),
+    SequentialResults = run_tests(N, {A, B}, 10, []),
+    ParalellResults = run_tests_paralell(N, AmountOfWorkers, {A, B}, 10, []),
+    csv_writer(SequentialResults, "Sequential", 1),
+    csv_writer(ParalellResults, "Parallel", AmountOfWorkers).
+
+csv_writer(Durations, FileName, AmountOfWorkers) ->
+    {ok, File} = file:open(FileName ++ ".csv", [write]),
+    write_data(File, Durations, 1, AmountOfWorkers),
+    file:close(File).
+
+write_data(_, [], _, _) ->
+    ok;
+write_data(File, [Duration | Durations], TestNumber, AmountOfWorkers) ->
+    io:format(File, "~w, ~.10f, ~w~n", [TestNumber, Duration, AmountOfWorkers]),
+    write_data(File, Durations, TestNumber + 1, AmountOfWorkers).
+
+run_tests(_, _, 0, Results) ->
+    lists:reverse(Results);
+
+run_tests(N, {A, B}, Count, Results) ->
     Start = erlang:monotonic_time(nanosecond),
     multiply(A, B),
     End = erlang:monotonic_time(nanosecond),
     Duration = (End - Start) / 1_000_000_000,
-    Throughput = (Operations / Duration) / 1000,
-    io:format("Computation time (sequential): ~f seconds~n", [Duration]),
-    io:format("Throughput (sequential): ~p kOp/s", [Throughput]).
+    io:format("Sequential: ~p~n", [Duration]),
+    run_tests(N, {A, B}, Count - 1, [Duration | Results]).
 
-test_parallel(N, AmountOfWorkers) ->
-    A = generate_matrix(N),
-    B = generate_matrix(N),
-    Operations = math:pow(N, 3),
+
+run_tests_paralell(_, _, _, 0, Results) ->
+    lists:reverse(Results);
+
+run_tests_paralell(N, AmountOfWorkers, {A, B}, Count, Results) ->
     Start = erlang:monotonic_time(nanosecond),
-    C = multiply_parallel(A, B, AmountOfWorkers),
+    multiply_parallel(A, B, AmountOfWorkers),
     End = erlang:monotonic_time(nanosecond),
     Duration = (End - Start) / 1_000_000_000,
-    Throughput = (Operations / Duration) / 1000,
-    io:format("Computation time (parallel): ~f seconds~n", [Duration]),
-    io:format("Thrughput time (parallel): ~p kOp/s~n", [Throughput]).
+    io:format("Parallel: ~p~n", [Duration]),
+    run_tests_paralell(N, AmountOfWorkers, {A, B}, Count - 1, [Duration | Results]).
 
 multiply_parallel(MatrixA, MatrixB, AmountOfWorkers) ->
     Master = self(),
@@ -40,13 +57,13 @@ workpool([], Refs, Master) ->
             Result
     end || Ref <- lists:reverse(Refs)],
     Master ! {done, MatrixC};
-
 workpool([Row | Rest], Refs, Master) ->
     receive 
         {ready, Worker, Ref} ->
             Worker ! {work, Row, Ref},
             workpool(Rest, [Ref | Refs], Master)
     end.
+
 worker(MatrixB, WorkPool) ->
     Ref = make_ref(),
     WorkPool ! {ready, self(), Ref},
@@ -71,15 +88,17 @@ for_row_in_matrixA([Row | Rest], MatrixB, Acc) ->
 
 for_column_in_matrixB(_, [[]| _Rest], RowInMatrixC) ->
     lists:reverse(RowInMatrixC);
-
 for_column_in_matrixB(Row, MatrixB, Acc) ->
     {Element, RestOfMatrixBColumns} = for_column_in_row(Row, MatrixB, 0, []),
     for_column_in_matrixB(Row, RestOfMatrixBColumns, [Element | Acc]).
-%% Summera allt eftersom
+
 for_column_in_row([], [], Sum, RestOfMatrixB) ->
     {Sum, lists:reverse(RestOfMatrixB)};
 for_column_in_row([ColInRow | RestOfRow], [[Head| Tail] | Rest ], Sum, RestOfMatrixB) ->
     for_column_in_row(RestOfRow, Rest, ColInRow * Head + Sum, [Tail | RestOfMatrixB]).
+
+generate_matrices(Size) ->
+    {generate_matrix(Size), generate_matrix(Size)}.
 
 generate_matrix(Size) ->
     [[rand:uniform(100) || _ <- lists:seq(1, Size)] || _ <- lists:seq(1, Size)].

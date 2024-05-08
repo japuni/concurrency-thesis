@@ -63,7 +63,7 @@ start_hybrid(Id, Counter, Port, Messages) ->
     case gen_tcp:connect("localhost", Port, [{active, false}, {mode, list}]) of
         {ok, Socket} ->
             hybrid_loop(Id, Socket, Counter, Messages, 
-                        {matrix_multiplier:generate_matrix(100), matrix_multiplier:generate_matrix(100)}),
+                        {generate_matrix(5), generate_matrix(5)}),
             ok = gen_tcp:close(Socket);
         {error, _} ->
             start_hybrid(Id, Counter, Port, Messages)
@@ -73,8 +73,8 @@ hybrid_loop(Id, _Socket, _Counter, 0, _) ->
     io:fwrite("Client~p is done~n", [Id]);
 
 hybrid_loop(Id, Socket, Counter, Messages, {MatrixA, MatrixB}) ->
-    ok = gen_tcp:send(Socket, io_lib:format("~p~n", [MatrixA])),
-    ok = gen_tcp:send(Socket, io_lib:format("~p~n", [MatrixB])),
+    io:format(" ~p~n", [MatrixA]),
+    ok = gen_tcp:send(Socket, [ 5 | MatrixA]),
     case gen_tcp:recv(Socket, 0) of 
         {ok, Result} ->
             Counter ! {done},
@@ -126,3 +126,5 @@ counter(N,Master) ->
         {started} ->
             counter(N-1, Master)
     end.
+generate_matrix(Size) ->
+    [[rand:uniform(100) || _ <- lists:seq(1, Size)] || _ <- lists:seq(1, Size)].

@@ -10,40 +10,29 @@ start_parallel() ->
 
 sequential_connection_handler(ListenSocket) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    sequential_client_handler(ClientSocket, 0, 0),
+    client_handler(ClientSocket),
     sequential_connection_handler(ListenSocket).
 
 parallel_connection_handler(ListenSocket) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    spawn(fun() -> client_handler(ClientSocket, 0,0) end),
+    spawn(fun() -> client_handler(ClientSocket) end),
     parallel_connection_handler(ListenSocket).
 
-client_handler(ClientSocket, MatrixA, MatrixB) when is_list(MatrixB) ->
-    Result = matrix_multiplier:multiply_parallel(MatrixA, MatrixB, 12),
-    gen_tcp:send(ClientSocket, Result);
+result(ClientSocket, MatrixA, MatrixB) ->
+    io:format("trying to multiply~n"),
+    matrix_multiplier:multiply(MatrixA, MatrixB),
+    io:format("somehting more happened ~n"),
+    gen_tcp:send(ClientSocket, ok),
+    client_handler(ClientSocket).
 
-client_handler(ClientSocket, MatrixA, MatrixB) ->
+client_handler(ClientSocket) ->
+    io:format("Something happened~n"),
     case gen_tcp:recv(ClientSocket, 0) of
-        {ok, Data} when is_integer(MatrixA)->
-            client_handler(ClientSocket, Data, MatrixB);
-        {ok, Data} when is_integer(MatrixB)->
-            client_handler(ClientSocket, MatrixA, Data);
-        {error, _Reason} ->
-            done
-
-    end.
-
-sequential_client_handler(ClientSocket, MatrixA, MatrixB) when is_list(MatrixB) ->
-    Result = matrix_multiplier:multiply(MatrixA, MatrixB),
-    gen_tcp:send(ClientSocket, Result);
-
-sequential_client_handler(ClientSocket, MatrixA, MatrixB) ->
-    case gen_tcp:recv(ClientSocket, 0) of
-        {ok, Data} when is_integer(MatrixA)->
-            client_handler(ClientSocket, Data, MatrixB);
-        {ok, Data} when is_integer(MatrixB)->
-            client_handler(ClientSocket, MatrixA, Data);
-        {error, _Reason} ->
-            done
-
+        {ok, MatrixA} -> 
+            io:format("MatrixA ~p~n", [MatrixA]),
+            io:format("size : ~p~n", [hd(MatrixA)]);
+            % client_handler(ClientSocket, MatrixA);
+        {error, Reason} ->
+            io:format("Error: ~p ~n", [Reason]),
+            ok
     end.
