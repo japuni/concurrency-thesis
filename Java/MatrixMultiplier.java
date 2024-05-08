@@ -5,18 +5,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 // Set backlog to the same as erlang
 public class MatrixMultiplier {
 
-    private static final int SIZE = 1000;
-
-    private static final int AMOUNT_OF_TESTS = 10;
-
-    private static final int THREADS = 6;
+    private static int amountOfTests;
+    private static int size;
+    private static int threads;
 
     public static void main(String[] args) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("SIZE, THREADS, AMOUNT OF TESTS -> ");
+        String input = scanner.nextLine();
+        String[] splitInput = input.split(", ");
+        size = Integer.parseInt(splitInput[0]);
+        threads = Integer.parseInt(splitInput[1]);
+        amountOfTests = Integer.parseInt(splitInput[2]);
         List<int[][]> matrices = createMatricies();
         runTest(matrices);
     }
@@ -29,7 +35,7 @@ public class MatrixMultiplier {
         List<Double> parallelDurations = new ArrayList<>();
 
         //Sequential tests
-        for (int i = 0; i < AMOUNT_OF_TESTS; i++) {
+        for (int i = 0; i < amountOfTests; i++) {
             long startS = System.nanoTime();
             int[][] matrixCSeq = multiplyMatricesSequential(matrixA, matrixB);
             long endS = System.nanoTime();
@@ -40,7 +46,7 @@ public class MatrixMultiplier {
         csvWriter(sequentialDurations, "sequential");
 
         //Parallel tests
-        for (int i = 0; i < AMOUNT_OF_TESTS; i++) {
+        for (int i = 0; i < amountOfTests; i++) {
             long startP = System.nanoTime();
             int[][] matrixCPar = multiplyMatricesParallel(matrixA, matrixB);
             long endP = System.nanoTime();
@@ -52,8 +58,6 @@ public class MatrixMultiplier {
     }
 
     private static List<int[][]> createMatricies() {
-        int size = SIZE;
-
         int[][] matrixA = new int[size][size];
         int[][] matrixB = new int[size][size];
         List<int[][]> matrices = new LinkedList<>();
@@ -79,6 +83,8 @@ public class MatrixMultiplier {
             csvWriter.append(Integer.toString(i+1));
             csvWriter.append(", ");
             csvWriter.append(Double.toString(durations.get(i)));
+            csvWriter.append(", ");
+            csvWriter.append(Integer.toString(threads));
             csvWriter.append("\n");
         }
         csvWriter.flush();
@@ -86,12 +92,12 @@ public class MatrixMultiplier {
     }
 
     public static int[][] multiplyMatricesParallel(int[][] matrixA, int[][] matrixB) {
-        int[][] matrixC = new int[SIZE][SIZE];
+        int[][] matrixC = new int[size][size];
 
-        ForkJoinPool customThreadPool = new ForkJoinPool(THREADS);
-        customThreadPool.submit(() -> IntStream.range(0, SIZE).parallel().forEach(i -> {
-            for (int j = 0; j < SIZE; j++) {
-                for (int k = 0; k < SIZE; k++) {
+        ForkJoinPool customThreadPool = new ForkJoinPool(threads);
+        customThreadPool.submit(() -> IntStream.range(0, size).parallel().forEach(i -> {
+            for (int j = 0; j < size; j++) {
+                for (int k = 0; k < size; k++) {
                     matrixC[i][j] += matrixA[i][k] * matrixB[k][j];
                 }
             }
@@ -102,16 +108,15 @@ public class MatrixMultiplier {
     }
 
     public static int[][] multiplyMatricesSequential(int[][] matrixA, int[][] matrixB) {
-        int[][] matrixC = new int[SIZE][SIZE];
+        int[][] matrixC = new int[size][size];
 
-        for(int i = 0; i < SIZE; i++) {
-            for (int j = 0; j < SIZE; j++) {
-                for (int k = 0; k < SIZE; k++) {
+        for(int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                for (int k = 0; k < size; k++) {
                     matrixC[i][j] += matrixA[i][k] * matrixB[k][j];
                 }
             }
         }
-
         return matrixC;
     }
 }
