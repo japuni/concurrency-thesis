@@ -4,50 +4,63 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ServerS {
-    static ServerSocket serverSocket;
-
-    static boolean runMatrix = true;
+    private static ServerSocket serverSocket;
+    private static final boolean runMatrix = true;
 
     public static void main(String[] args) {
         try {
             serverSocket = new ServerSocket(8000);
             while (true) {
-                try {
-                    Socket socket = serverSocket.accept();
-                    try {
-                        PrintWriter out = new PrintWriter(new BufferedOutputStream(socket.getOutputStream()));
-                        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        try {
-                            if (runMatrix) {
-                                String response = handleRequestMatrix(in);
-                            } else {
-                                String response = handleRequestArithmetic(in);
-                            }
-                        } catch (IOException e) {
-                            System.out.println("I/O error: " + e);
-                        } finally {
-                            try {
-                                socket.close();
-                            } catch (IOException e) {
-                                System.out.println("I/O error: " + e);
-                            }
-                        }
-                    } catch (IOException e) {
-                        System.out.println("I/O error: " + e);
-                    }
-                } catch (IOException e) {
-                    System.out.println("I/O error: " + e);
-                }
+                Socket socket = serverSocket.accept();
+                handleClientRequest(socket);
             }
         } catch (IOException e) {
-            System.out.println("I/O error: " + e);
+            logError(e);
         }
     }
 
-    static String handleRequestArithmetic(BufferedReader in) throws IOException {
+    private static void handleClientRequest(Socket socket) {
+        try {
+            PrintWriter out = new PrintWriter(new BufferedOutputStream(socket.getOutputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            if (runMatrix) {
+                processMatrixReq(in, out);
+            } else {
+                String response = handleRequestArithmetic(in);
+            }
+
+            socket.close();
+        } catch (IOException e) {
+            logError(e);
+        }
+    }
+
+    private static void processMatrixReq(BufferedReader in, PrintWriter out) throws IOException {
+        List<int[][]> matrices = new ArrayList<>();
+
+        String message = in.readLine();
+        while (message != null) {
+            matrices.add(handleRequestMatrix(message));
+            if (matrices.size() == 2)
+                break;
+            message = in.readLine();
+        }
+
+        int[][] result = MatrixMultiplier.multiplyMatricesParallel(matrices.get(0), matrices.get(1));
+        out.print(Arrays.deepToString(result));
+        out.flush();
+    }
+
+    private static void logError(IOException e) {
+        System.out.println("I/O error: " + e);
+    }
+
+    private static String handleRequestArithmetic(BufferedReader in) throws IOException {
         String line = in.readLine();
         while (line != null) {
             line = in.readLine();
@@ -57,20 +70,21 @@ public class ServerS {
         return Integer.toString(result);
     }
 
-    static String handleRequestMatrix(BufferedReader in) throws IOException {
-        String line = in.readLine();
-        List<String> matrices = new ArrayList<>();
-        while (line != null) {
-            matrices.add(line);
-            line = in.readLine();
-        }
-        return "hello";
-    }
+    private static int[][] handleRequestMatrix(String matrixDescription) {
+        matrixDescription = matrixDescription.substring(1, matrixDescription.length() - 1);
+        String[] rows = matrixDescription.split("\\],\\[");
+        int[][] newMatrix = new int[rows.length][];
 
-    static int[][] convertStringToMatrix(String matrix) {
-        int[][] temp = new int[2][2];
-        return temp;
+        for (int i = 0; i < rows.length; i++) {
+            String row = rows[i];
+            row = row.replaceAll("\\[|\\]", "");
+            String[] numbers = row.split(",");
+            newMatrix[i] = new int[numbers.length];
+            for (int j = 0; j < numbers.length; j++) {
+                newMatrix[i][j] = Integer.parseInt(numbers[j]);
+            }
+        }
+
+        return newMatrix;
     }
 }
-
-
