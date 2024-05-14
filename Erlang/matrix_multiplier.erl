@@ -5,19 +5,8 @@ test(N, AmountOfWorkers) ->
     {A, B} = generate_matrices(N),
     SequentialResults = run_tests(N, {A, B}, 10, []),
     ParalellResults = run_tests_paralell(N, AmountOfWorkers, {A, B}, 10, []),
-    csv_writer(SequentialResults, "Sequential", 1),
-    csv_writer(ParalellResults, "Parallel", AmountOfWorkers).
-
-csv_writer(Durations, FileName, AmountOfWorkers) ->
-    {ok, File} = file:open(FileName ++ ".csv", [write]),
-    write_data(File, Durations, 1, AmountOfWorkers),
-    file:close(File).
-
-write_data(_, [], _, _) ->
-    ok;
-write_data(File, [Duration | Durations], TestNumber, AmountOfWorkers) ->
-    io:format(File, "~w, ~.10f, ~w~n", [TestNumber, Duration, AmountOfWorkers]),
-    write_data(File, Durations, TestNumber + 1, AmountOfWorkers).
+    csv_writer:csv_writer(SequentialResults, "SequentialMatrixMultiplier", 1),
+    csv_writer:csv_writer(ParalellResults, "ParallelMatrixMultiplier", AmountOfWorkers).
 
 run_tests(_, _, 0, Results) ->
     lists:reverse(Results);

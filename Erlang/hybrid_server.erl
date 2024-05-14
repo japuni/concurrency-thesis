@@ -1,5 +1,5 @@
 -module(hybrid_server).
--export([start_parallel/0, start_sequential/0]).
+-export([start_parallel/0, start_sequential/0, parse/1]).
 
 start_sequential() ->
     {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 100}]),
@@ -19,20 +19,25 @@ parallel_connection_handler(ListenSocket) ->
     parallel_connection_handler(ListenSocket).
 
 result(ClientSocket, MatrixA, MatrixB) ->
-    io:format("trying to multiply~n"),
-    matrix_multiplier:multiply(MatrixA, MatrixB),
-    io:format("somehting more happened ~n"),
-    gen_tcp:send(ClientSocket, ok),
-    client_handler(ClientSocket).
+    Result = matrix_multiplier:multiply(MatrixA, MatrixB),
+    ok = gen_tcp:send(ClientSocket, io_lib:format("~p", [Result])).
 
 client_handler(ClientSocket) ->
-    io:format("Something happened~n"),
     case gen_tcp:recv(ClientSocket, 0) of
-        {ok, MatrixA} -> 
-            io:format("MatrixA ~p~n", [MatrixA]),
-            io:format("size : ~p~n", [hd(MatrixA)]);
-            % client_handler(ClientSocket, MatrixA);
+        {ok, Data} -> 
+            Matrix = parse(Data),
+            result(ClientSocket, Matrix, Matrix);
+            % result(ClientSocket, A, string:replace(B, "\n", ""));
+            
         {error, Reason} ->
             io:format("Error: ~p ~n", [Reason]),
             ok
     end.
+parse(String) ->
+    {ok, Tokens, _} = erl_scan:string(String),
+    Dot = case lists:last(Tokens) of
+              {dot, _} -> [];
+              _ -> [{dot, 1}]
+          end,
+    {ok, Result} = erl_parse:parse_term(Tokens ++ Dot),
+    Result.
