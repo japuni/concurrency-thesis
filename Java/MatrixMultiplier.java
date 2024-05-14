@@ -16,8 +16,8 @@ public class MatrixMultiplier {
         System.out.print("THREADS, AMOUNT OF TESTS -> ");
         String input = scanner.nextLine();
         String[] splitInput = input.split(", ");
-        threads = Integer.parseInt(splitInput[1]);
-        amountOfTests = Integer.parseInt(splitInput[2]);
+        threads = Integer.parseInt(splitInput[0]);
+        amountOfTests = Integer.parseInt(splitInput[1]);
     }
 
     private static void runTest(List<int[][]> matrices, int size) {

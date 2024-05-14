@@ -3,9 +3,7 @@ package Java;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class ServerS {
     private static ServerSocket serverSocket;
@@ -32,6 +30,8 @@ public class ServerS {
                 processMatrixReq(in, out);
             } else {
                 String response = handleRequestArithmetic(in);
+                out.print(response);
+                out.flush();
             }
 
             socket.close();
@@ -41,17 +41,10 @@ public class ServerS {
     }
 
     private static void processMatrixReq(BufferedReader in, PrintWriter out) throws IOException {
-        List<int[][]> matrices = new ArrayList<>();
-
         String message = in.readLine();
-        while (message != null) {
-            matrices.add(handleRequestMatrix(message));
-            if (matrices.size() == 2)
-                break;
-            message = in.readLine();
-        }
+        int[][] matrix = handleRequestMatrix(message);
 
-        int[][] result = MatrixMultiplier.multiplyMatricesParallel(matrices.get(0), matrices.get(1));
+        int[][] result = MatrixMultiplier.multiplyMatricesParallel(matrix, matrix);
         out.print(Arrays.deepToString(result));
         out.flush();
     }
