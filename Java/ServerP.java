@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.ForkJoinPool;
+import java.util.stream.IntStream;
 
 public class ServerP {
     private static ServerSocket serverSocket;
@@ -13,9 +15,7 @@ public class ServerP {
     public static void main(String[] args) {
         try {
             serverSocket = new ServerSocket(8000);
-            for (int i = 0; i < amountOfThreads; i++) {
-                new Thread(new ConnectionHandler()).start();
-            }
+            new Thread(new ConnectionHandler()).start();
         } catch (IOException e) {
             System.out.println("I/O error: " + e);
         }
@@ -27,7 +27,10 @@ public class ServerP {
             while (true) {
                 try {
                     Socket socket = serverSocket.accept();
-                    new Thread(new ClientHandler(socket)).start();
+                    ForkJoinPool customThreadPool = new ForkJoinPool(amountOfThreads);
+                    customThreadPool.submit(() ->
+                            handleClient(socket)
+                    ).join();
                 } catch (IOException e) {
                     System.out.println("I/O error: " + e);
                 }
@@ -35,39 +38,35 @@ public class ServerP {
         }
     }
 
-    static class ClientHandler implements Runnable {
-        PrintWriter out;
-        BufferedReader in;
-        Socket clientSocket;
+    private static void handleClient(Socket clientSocket) {
+        try {
+            PrintWriter out = new PrintWriter(new BufferedOutputStream(clientSocket.getOutputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-        ClientHandler(Socket clientSocket){
-            this.clientSocket = clientSocket;
-        }
-
-        @Override
-        public void run() {
-            try {
-                out = new PrintWriter(new BufferedOutputStream(clientSocket.getOutputStream()));
-                in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-                if (runMatrix) {
-                    processMatrixReq(in, out);
-                } else {
-                    String response = handleRequestArithmetic(in.readLine());
-                    out.print(response);
-                    out.flush();
-                }
-
-                clientSocket.close();
-            } catch (IOException e) {
-                System.out.println("I/O error: " + e);
+            if (runMatrix) {
+                processMatrixReq(in, out);
+            } else {
+                String response = handleRequestArithmetic(in.readLine());
+                out.print(response);
+                out.flush();
             }
+
+            clientSocket.close();
+        } catch (IOException e) {
+            System.out.println("I/O error: " + e);
         }
     }
 
     private static void processMatrixReq(BufferedReader in, PrintWriter out) throws IOException {
+        StringBuilder matrixDescription = new StringBuilder();
         String message = in.readLine();
-        int[][] matrix = handleRequestMatrix(message);
+        while (!message.equals("EOF")) {
+            matrixDescription.append(message);
+            message = in.readLine();
+        }
+        int[][] matrix = handleRequestMatrix(matrixDescription.toString());
+
+
 
         int[][] result = MatrixMultiplier.multiplyMatricesParallel(matrix, matrix);
         out.print(Arrays.deepToString(result));

@@ -6,12 +6,11 @@ import java.net.Socket;
 import java.util.Arrays;
 
 public class ServerS {
-    private static ServerSocket serverSocket;
     private static final boolean runMatrix = true;
 
     public static void main(String[] args) {
         try {
-            serverSocket = new ServerSocket(8000);
+            ServerSocket serverSocket = new ServerSocket(8000);
             while (true) {
                 Socket socket = serverSocket.accept();
                 handleClientRequest(socket);
@@ -41,10 +40,15 @@ public class ServerS {
     }
 
     private static void processMatrixReq(BufferedReader in, PrintWriter out) throws IOException {
+        StringBuilder matrixDescription = new StringBuilder();
         String message = in.readLine();
-        int[][] matrix = handleRequestMatrix(message);
+        while (!message.equals("EOF")) {
+            matrixDescription.append(message);
+            message = in.readLine();
+        }
+        int[][] matrix = handleRequestMatrix(matrixDescription.toString());
 
-        int[][] result = MatrixMultiplier.multiplyMatricesParallel(matrix, matrix);
+        int[][] result = MatrixMultiplier.multiplyMatricesSequential(matrix, matrix);
         out.print(Arrays.deepToString(result));
         out.flush();
     }

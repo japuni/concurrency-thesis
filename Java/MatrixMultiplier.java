@@ -7,36 +7,37 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 
 public class MatrixMultiplier {
-
+    private static int size;
     private static int amountOfTests;
     private static int threads;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
-        System.out.print("THREADS, AMOUNT OF TESTS -> ");
+        System.out.print("THREADS, AMOUNT OF TESTS, SIZE -> ");
         String input = scanner.nextLine();
         String[] splitInput = input.split(", ");
         threads = Integer.parseInt(splitInput[0]);
         amountOfTests = Integer.parseInt(splitInput[1]);
+        size = Integer.parseInt(splitInput[2]);
+        int[][] matrix = ReadMatrix.run(Integer.toString(size));
+        //System.out.println(Arrays.deepToString(matrix));
+        runTest(matrix);
     }
 
-    private static void runTest(List<int[][]> matrices, int size) {
-        int[][] matrixA = matrices.get(0);
-        int[][] matrixB = matrices.get(1);
-
+    private static void runTest(int[][] matrix) {
         List<Double> sequentialDurations = new ArrayList<>();
         List<Double> parallelDurations = new ArrayList<>();
 
         // Run sequential tests
         for (int i = 0; i < amountOfTests; i++) {
             long startS = System.nanoTime();
-            int[][] sequentialResult = multiplyMatricesSequential(matrixA, matrixB);
+            int[][] sequentialResult = multiplyMatricesSequential(matrix, matrix);
             long endS = System.nanoTime();
             sequentialDurations.add(printAndCalcDuration(startS, endS, sequentialResult));
         }
         for (int i = 0; i < amountOfTests; i++) {
             long startP = System.nanoTime();
-            int[][] parallelResult = multiplyMatricesParallel(matrixA, matrixB);
+            int[][] parallelResult = multiplyMatricesParallel(matrix, matrix);
             long endP = System.nanoTime();
             parallelDurations.add(printAndCalcDuration(startP, endP, parallelResult));
         }
@@ -56,8 +57,6 @@ public class MatrixMultiplier {
                 csvWriter.append(Integer.toString(i+1));
                 csvWriter.append(", ");
                 csvWriter.append(Double.toString(durations.get(i)));
-                csvWriter.append(", ");
-                csvWriter.append(Integer.toString(threads));
                 csvWriter.append("\n");
             }
             csvWriter.flush();
@@ -67,7 +66,6 @@ public class MatrixMultiplier {
     }
 
     public static int[][] multiplyMatricesParallel(int[][] matrixA, int[][] matrixB) {
-        int size = matrixA.length;
         int[][] matrixC = new int[size][size];
 
         ForkJoinPool customThreadPool = new ForkJoinPool(threads);
@@ -83,7 +81,6 @@ public class MatrixMultiplier {
     }
 
     public static int[][] multiplyMatricesSequential(int[][] matrixA, int[][] matrixB) {
-        int size = matrixA.length;
         int[][] matrixC = new int[size][size];
 
         for(int i = 0; i < size; i++) {
