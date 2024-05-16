@@ -5,7 +5,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.IntStream;
 
 public class ServerP {
     private static ServerSocket serverSocket;
@@ -61,6 +60,10 @@ public class ServerP {
         StringBuilder matrixDescription = new StringBuilder();
         String message = in.readLine();
         while (!message.equals("EOF")) {
+            if (message.contains("EOF")) {
+                matrixDescription.append(message.replaceAll("EOF", ""));
+                break;
+            }
             matrixDescription.append(message);
             message = in.readLine();
         }

@@ -20,7 +20,7 @@ public class ReadMatrix {
 
     private static int[][] createMatrix(String matrixDescription) {
         matrixDescription = matrixDescription.substring(1, matrixDescription.length() - 1);
-        String[] rows = matrixDescription.split("\\]\\[");
+        String[] rows = matrixDescription.split("\\],\\[");
         int[][] newMatrix = new int[rows.length][];
 
         for (int i = 0; i < rows.length; i++) {

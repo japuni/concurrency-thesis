@@ -43,6 +43,10 @@ public class ServerS {
         StringBuilder matrixDescription = new StringBuilder();
         String message = in.readLine();
         while (!message.equals("EOF")) {
+            if (message.contains("EOF")) {
+                matrixDescription.append(message.replaceAll("EOF", ""));
+                break;
+            }
             matrixDescription.append(message);
             message = in.readLine();
         }
