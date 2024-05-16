@@ -38,6 +38,26 @@ client_handler(ClientSocket, Acc) ->
             io:format("Error: ~p ~n", [Reason]),
             ok
     end.
+paralell_client_handler(ClientSocket, Acc) ->
+    case gen_tcp:recv(ClientSocket, 0) of
+        {ok, "EOF"} ->
+            io:format("hello~n"),
+            Matrix = parse(lists:flatten(lists:reverse(Acc))),
+            Result = matrix_multiplier:multiply_parallel(Matrix, Matrix, 6),
+            ok = gen_tcp:send(ClientSocket, io_lib:format("~p", [Result]));
+        {ok, Data} ->
+            case is_end_of_file(Data, []) of
+                {true, EndOfMatrix} ->
+                    Matrix = parse(lists:flatten(lists:reverse([EndOfMatrix | Acc]))),
+                    Result = matrix_multiplier:multiply_parallel(Matrix, Matrix, 6),
+                    ok = gen_tcp:send(ClientSocket, io_lib:format("~p", [Result]));
+                {false, PartOfMatrix} ->
+                    client_handler(ClientSocket, [PartOfMatrix | Acc])
+            end;
+        {error, Reason} ->
+            io:format("Error: ~p ~n", [Reason]),
+            ok
+    end.
 
 paralell_connection_handler(ListenSocket, WorkPool) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
@@ -69,7 +89,7 @@ paralell_client_handler(WorkPool) ->
         {client, Client} ->
             ClientSocket = Client
     end,
-    client_handler(ClientSocket, []),
+    paralell_client_handler(ClientSocket, []),
     WorkPool ! {done, self()},
     paralell_client_handler(WorkPool).
 

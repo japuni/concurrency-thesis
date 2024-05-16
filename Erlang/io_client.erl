@@ -15,7 +15,6 @@ loop(_Socket, _Counter, 0, _) ->
 loop(Socket, Counter, Messages, {X, Y}) ->
     ok = gen_tcp:send(Socket, io_lib:format("~p+~p~n", [X, Y])),
     Result = hd(io_lib:format("~p", [X + Y])),
-    io:format("Result = ~p~n", [Result]),
     case gen_tcp:recv(Socket, 0) of
         {ok, Result} ->
             Counter ! {done},

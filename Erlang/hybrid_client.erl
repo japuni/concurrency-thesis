@@ -40,8 +40,8 @@ test_java(Clients) ->
     Self = self(),
     Matrix = read_matrix(),
     Counter = spawn(fun() -> counter(Clients , Self) end),
-    [spawn(fun() -> start(Counter, 8000, Matrix) end) || _ <- lists:seq(1, Clients)],
     Start = erlang:monotonic_time(nanosecond),
+    [spawn(fun() -> start(Counter, 8000, Matrix) end) || _ <- lists:seq(1, Clients)],
     receive
         {done} ->
             End = erlang:monotonic_time(nanosecond),
