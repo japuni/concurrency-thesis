@@ -1,35 +1,41 @@
 -module(matrix_multiplier).
--export([test/2, generate_matrix/1, multiply_parallel/3, multiply/2]).
+-export([test/1, generate_matrix/1, multiply_parallel/3, multiply/2]).
+read_matrix() ->
+    {ok, BinaryContent} = file:read_file("../matrices/1000.txt"),
+    Content = binary_to_list(BinaryContent),
+    I = string:tokens(Content, "\n"),
+    X = lists:flatten(I),
+    X.
 
-test(N, AmountOfWorkers) ->
-    {A, B} = generate_matrices(N),
-    SequentialResults = run_tests(N, {A, B}, 10, []),
-    ParalellResults = run_tests_paralell(N, AmountOfWorkers, {A, B}, 10, []),
-    csv_writer:csv_writer(SequentialResults, "SequentialMatrixMultiplier", 1),
-    csv_writer:csv_writer(ParalellResults, "ParallelMatrixMultiplier", AmountOfWorkers).
+test(AmountOfWorkers) ->
+    Matrix = parse(read_matrix()),
+    SequentialResults = run_tests(Matrix, 10, []),
+    ParalellResults = run_tests_paralell(AmountOfWorkers, Matrix, 10, []),
+    csv_writer:csv_writer(SequentialResults, "SequentialMatrixMultiplier"),
+    csv_writer:csv_writer(ParalellResults, "ParallelMatrixMultiplier").
 
-run_tests(_, _, 0, Results) ->
+run_tests(_, 0, Results) ->
     lists:reverse(Results);
 
-run_tests(N, {A, B}, Count, Results) ->
+run_tests(Matrix, Count, Results) ->
     Start = erlang:monotonic_time(nanosecond),
-    multiply(A, B),
+    multiply(Matrix, Matrix),
     End = erlang:monotonic_time(nanosecond),
     Duration = (End - Start) / 1_000_000_000,
     io:format("Sequential: ~p~n", [Duration]),
-    run_tests(N, {A, B}, Count - 1, [Duration | Results]).
+    run_tests(Matrix, Count - 1, [Duration | Results]).
 
 
-run_tests_paralell(_, _, _, 0, Results) ->
+run_tests_paralell(_, _, 0, Results) ->
     lists:reverse(Results);
 
-run_tests_paralell(N, AmountOfWorkers, {A, B}, Count, Results) ->
+run_tests_paralell(AmountOfWorkers, Matrix, Count, Results) ->
     Start = erlang:monotonic_time(nanosecond),
-    multiply_parallel(A, B, AmountOfWorkers),
+    multiply_parallel(Matrix, Matrix, AmountOfWorkers),
     End = erlang:monotonic_time(nanosecond),
     Duration = (End - Start) / 1_000_000_000,
     io:format("Parallel: ~p~n", [Duration]),
-    run_tests_paralell(N, AmountOfWorkers, {A, B}, Count - 1, [Duration | Results]).
+    run_tests_paralell(AmountOfWorkers, Matrix, Count - 1, [Duration | Results]).
 
 multiply_parallel(MatrixA, MatrixB, AmountOfWorkers) ->
     Master = self(),
@@ -91,3 +97,12 @@ generate_matrices(Size) ->
 
 generate_matrix(Size) ->
     [[rand:uniform(100) || _ <- lists:seq(1, Size)] || _ <- lists:seq(1, Size)].
+
+parse(String) ->
+    {ok, Tokens, _} = erl_scan:string(String),
+    Dot = case lists:last(Tokens) of
+              {dot, _} -> [];
+              _ -> [{dot, 1}]
+          end,
+    {ok, Result} = erl_parse:parse_term(Tokens ++ Dot),
+    Result.

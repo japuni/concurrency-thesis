@@ -30,7 +30,7 @@ loop(Socket, Counter, Messages, {X, Y}) ->
     end.
 
 test_java(FileName, Clients, Messages) ->
-    Durations = [test_java(Clients, Messages) || lists:seq(1, 10)],
+    Durations = [test_java(Clients, Messages) || _ <- lists:seq(1, 10)],
     csv_writer:csv_writer(Durations, FileName, 0).
 
 test_java(Clients, Messages) ->
@@ -43,14 +43,13 @@ test_java(Clients, Messages) ->
         {done} ->
       End = erlang:monotonic_time(nanosecond),
       Duration = (End - Start) / 1_000_000_000,
-      io:format("Computation time in java: ~f seconds~n", [Duration]),
-      io:format("Throughput in java: ~f clients served per second", [(TotalMessages / Duration)])
+      io:format("Computation time in java: ~f seconds~n", [Duration])
     end,
     Duration.
 
 test_erlang(FileName, Clients, Messages) ->
-    Durations = [test_java(Clients, Messages) || lists:seq(1, 10)],
-    csv_writer:csv_writer(Durations, FileName, 0).
+    Durations = [test_erlang(Clients, Messages) || _ <- lists:seq(1, 10)],
+    csv_writer:csv_writer(Durations, FileName).
 
 test_erlang(Clients, Messages) ->
     Self = self(),
@@ -62,10 +61,9 @@ test_erlang(Clients, Messages) ->
         {done} ->
       End = erlang:monotonic_time(nanosecond),
       Duration = (End - Start) / 1_000_000_000,
-      io:format("Computation time in erlang: ~f seconds~n", [Duration]),
-      io:format("Throughput in erlang: ~f clients served per second", [(TotalMessages / Duration)])
+      io:format("Computation time in erlang: ~f seconds~n", [Duration])
     end,
-    ok.
+    Duration.
 
 counter(0,Master) ->
     Master ! {done};
