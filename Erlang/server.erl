@@ -5,30 +5,37 @@ start_sequential() ->
     {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 100}]),
     spawn(fun() -> sequential_connection_handler(ListenSocket) end).
 
+start_paralell(0) ->
+    {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 100}]),
+    spawn(fun() -> paralell_connection_handler(ListenSocket) end);
+
 start_paralell(AmountOfWorkers) ->
     {ok, ListenSocket} = gen_tcp:listen(8001, [{active, false}, {packet, 0},{backlog, 100}]),
     WorkPool = spawn(fun() -> workpool([], []) end),
-    Workers = [spawn(fun() -> paralell_client_handler(WorkPool, Id) end) || Id <- lists:seq(1, AmountOfWorkers)],
+    Workers = [spawn(fun() -> paralell_client_handler(WorkPool) end) || _ <- lists:seq(1, AmountOfWorkers)],
     [WorkPool ! {done, Worker} || Worker <- Workers],
     spawn(fun() -> paralell_connection_handler(ListenSocket, WorkPool) end).
 
 sequential_connection_handler(ListenSocket) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
-    client_handler(ClientSocket, 0, 0),
+    client_handler(ClientSocket),
     sequential_connection_handler(ListenSocket).
 
-client_handler(ClientSocket, Id, Count) ->
+client_handler(ClientSocket) ->
     case gen_tcp:recv(ClientSocket, 0) of
         {ok, Data} ->
-            {X, Rest} = string:to_integer(Data),
-            {Y, _} = string:to_integer(Rest),
-            Result = X + Y,
-            io:format("Result = ~p Kommit hit ~p loop:~p~n", [Result, Id, Count]),
-            ok = gen_tcp:send(ClientSocket, io_lib:format("~p", [Result])),
-            client_handler(ClientSocket, Id, Count+1);
+            [X,Y] = string:split(Data, "+"),
+            Result = list_to_integer(X) + list_to_integer(Y),
+            ok = gen_tcp:send(ClientSocket, integer_to_list(Result)),
+            client_handler(ClientSocket);
         {error, _Reason} ->
             done
     end.
+
+paralell_connection_handler(ListenSocket) ->
+    {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
+    spawn(fun() -> client_handler(ClientSocket) end),
+    paralell_connection_handler(ListenSocket).
 
 paralell_connection_handler(ListenSocket, WorkPool) ->
     {ok, ClientSocket} = gen_tcp:accept(ListenSocket),
@@ -56,11 +63,11 @@ workpool([Worker | Rest], [Client | Clients]) ->
     Worker ! {client, Client},
     workpool(Rest, Clients).
 
-paralell_client_handler(WorkPool, Id) ->
+paralell_client_handler(WorkPool) ->
     receive 
         {client, Client} ->
             ClientSocket = Client
     end,
-    client_handler(ClientSocket, Id, 1),
+    client_handler(ClientSocket),
     WorkPool ! {done, self()},
-    paralell_client_handler(WorkPool, Id).
+    paralell_client_handler(WorkPool).

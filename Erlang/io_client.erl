@@ -13,7 +13,7 @@ start(Counter, Port, Messages) ->
 loop(_Socket, _Counter, 0, _) ->
     ok;
 loop(Socket, Counter, Messages, {X, Y}) ->
-    ok = gen_tcp:send(Socket, io_lib:format("~p+~p~n", [X, Y])),
+    ok = gen_tcp:send(Socket, io_lib:format("~p+~p", [X, Y])),
     Result = hd(io_lib:format("~p", [X + Y])),
     case gen_tcp:recv(Socket, 0) of
         {ok, Result} ->
