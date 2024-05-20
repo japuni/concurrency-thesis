@@ -9,7 +9,7 @@ import java.util.stream.IntStream;
 public class MatrixMultiplier {
     private static int size;
     private static int amountOfTests;
-    private static int threads;
+    private static int threads = 6;
 
     public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
@@ -20,15 +20,12 @@ public class MatrixMultiplier {
         amountOfTests = Integer.parseInt(splitInput[1]);
         size = Integer.parseInt(splitInput[2]);
         int[][] matrix = ReadMatrix.run(Integer.toString(size));
-        //System.out.println(Arrays.deepToString(matrix));
         runTest(matrix);
     }
 
     private static void runTest(int[][] matrix) {
         List<Double> sequentialDurations = new ArrayList<>();
         List<Double> parallelDurations = new ArrayList<>();
-
-        // Run sequential tests
         for (int i = 0; i < amountOfTests; i++) {
             long startS = System.nanoTime();
             int[][] sequentialResult = multiplyMatricesSequential(matrix, matrix);

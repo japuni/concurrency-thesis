@@ -6,11 +6,11 @@ import java.net.Socket;
 import java.util.Arrays;
 
 public class ServerS {
-    private static final boolean runMatrix = true;
+    private static final boolean runMatrix = false;
 
     public static void main(String[] args) {
         try {
-            ServerSocket serverSocket = new ServerSocket(8000);
+            ServerSocket serverSocket = new ServerSocket(8000, 100);
             while (true) {
                 Socket socket = serverSocket.accept();
                 handleClientRequest(socket);
@@ -28,9 +28,13 @@ public class ServerS {
             if (runMatrix) {
                 processMatrixReq(in, out);
             } else {
-                String response = handleRequestArithmetic(in);
-                out.print(response);
-                out.flush();
+                String line = in.readLine();
+                while (line != null) {
+                    String response = handleRequestArithmetic(in, line);
+                    out.print(response);
+                    out.flush();
+                    line = in.readLine();
+                }
             }
 
             socket.close();
@@ -61,11 +65,7 @@ public class ServerS {
         System.out.println("I/O error: " + e);
     }
 
-    private static String handleRequestArithmetic(BufferedReader in) throws IOException {
-        String line = in.readLine();
-        while (line != null) {
-            line = in.readLine();
-        }
+    private static String handleRequestArithmetic(BufferedReader in, String line) throws IOException {
         String[] requestParts = line.split("\\+");
         int result = Integer.parseInt(requestParts[0]) + Integer.parseInt(requestParts[1]);
         return Integer.toString(result);

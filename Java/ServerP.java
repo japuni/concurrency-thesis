@@ -8,12 +8,12 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ServerP {
     private static ServerSocket serverSocket;
-    private static final int amountOfThreads = 6;
-    private static final boolean runMatrix = true;
+    private static final int amountOfThreads = 24;
+    private static final boolean runMatrix = false;
 
     public static void main(String[] args) {
         try {
-            serverSocket = new ServerSocket(8000);
+            serverSocket = new ServerSocket(8000,100);
             new Thread(new ConnectionHandler()).start();
         } catch (IOException e) {
             System.out.println("I/O error: " + e);
@@ -29,7 +29,7 @@ public class ServerP {
                     ForkJoinPool customThreadPool = new ForkJoinPool(amountOfThreads);
                     customThreadPool.submit(() ->
                             handleClient(socket)
-                    ).join();
+                    );
                 } catch (IOException e) {
                     System.out.println("I/O error: " + e);
                 }
@@ -45,9 +45,13 @@ public class ServerP {
             if (runMatrix) {
                 processMatrixReq(in, out);
             } else {
-                String response = handleRequestArithmetic(in.readLine());
-                out.print(response);
-                out.flush();
+                String line = in.readLine();
+                while (line != null) {
+                    String response = handleRequestArithmetic(in, line);
+                    out.print(response);
+                    out.flush();
+                    line = in.readLine();
+                }
             }
 
             clientSocket.close();
@@ -69,15 +73,14 @@ public class ServerP {
         }
         int[][] matrix = handleRequestMatrix(matrixDescription.toString());
 
-
-
-        int[][] result = MatrixMultiplier.multiplyMatricesParallel(matrix, matrix);
+        MatrixMultiplier matrixMultiplier = new MatrixMultiplier();
+        int[][] result = matrixMultiplier.multiplyMatricesParallel(matrix, matrix);
         out.print(Arrays.deepToString(result));
         out.flush();
     }
 
-    private static String handleRequestArithmetic(String request) {
-        String[] requestParts = request.split("\\+");
+    private static String handleRequestArithmetic(BufferedReader in, String line) throws IOException {
+        String[] requestParts = line.split("\\+");
         int result = Integer.parseInt(requestParts[0]) + Integer.parseInt(requestParts[1]);
         return Integer.toString(result);
     }
